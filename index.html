@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8" />
+  <title>Supabase Viewer – Final Version</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
+  <style>
+    :root {
+      --bg-color: #ffffff;
+      --text-color: #000000;
+      --sticky-header-bg: #ffffff;
+    }
+
+    [data-theme="dark"] {
+      --bg-color: #121212;
+      --text-color: #ffffff;
+      --sticky-header-bg: #1e1e1e;
+    }
+
+    body {
+      background-color: var(--bg-color);
+      color: var(--text-color);
+      font-family: sans-serif;
+      padding: 1rem;
+    }
+
+    input[type="text"] {
+      padding: 0.3rem;
+      font-size: 0.9rem;
+      width: 100%;
+      box-sizing: border-box;
+    }
+
+    table {
+      border-collapse: collapse;
+      width: 100%;
+      margin-top: 1rem;
+      table-layout: auto;
+    }
+
+    th, td {
+      border: 1px solid #ccc;
+      padding: 0.5rem;
+      text-align: left;
+      background-color: var(--bg-color);
+      color: var(--text-color);
+    }
+
+    th.sortable {
+      cursor: pointer;
+      user-select: none;
+    }
+
+    .sticky-title {
+      position: sticky;
+      left: 0;
+      background: var(--sticky-header-bg);
+      z-index: 2;
+    }
+
+    thead tr:first-child th {
+      position: sticky;
+      top: 0;
+      background: var(--sticky-header-bg);
+      z-index: 1;
+    }
+
+    #resetSortBtn {
+      margin-top: 0.5rem;
+      padding: 0.4rem 0.8rem;
+      font-size: 0.9rem;
+    }
+
+    @media screen and (max-width: 768px) {
+      table, thead, tbody, th, td, tr {
+        display: block;
+        width: 100%;
+      }
+
+      thead tr {
+        display: none;
+      }
+
+      tbody tr {
+        margin-bottom: 1rem;
+        border: 1px solid #ccc;
+        padding: 0.5rem;
+      }
+
+      tbody td {
+        text-align: right;
+        padding-left: 50%;
+        position: relative;
+      }
+
+      tbody td::before {
+        content: attr(data-label);
+        position: absolute;
+        left: 0;
+        width: 45%;
+        padding-left: 0.5rem;
+        font-weight: bold;
+        text-align: left;
+      }
+    }
+  </style>
+</head>
+<body>
+  <h1>Supabase Viewer</h1>
+  <label><input type="checkbox" id="darkModeToggle" checked> Dark Mode</label>
+  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+  <div id="columnToggles" style="margin: 0;"></div>
+  <button id="resetSortBtn" onclick="resetSort()">Reset Sort</button>
+</div>
+
+  <table id="data-table">
+    <thead>
+      <tr>
+        <th class="sortable" onclick="sortBy('id')">ID <span id="sort-id"></span></th>
+        <th class="sortable sticky-title" onclick="sortBy('title')">Title <span id="sort-title"></span></th>
+        <th class="sortable" onclick="sortBy('platform')">Platform <span id="sort-platform"></span></th>
+        <th class="sortable" onclick="sortBy('release_date')">Release Date <span id="sort-release_date"></span></th>
+        <th class="sortable" onclick="sortBy('playtime')">Playtime <span id="sort-playtime"></span></th>
+        <th class="sortable" onclick="sortBy('rawg_rating')">RAWG Rating <span id="sort-rawg_rating"></span></th>
+        <th class="sortable" onclick="sortBy('genre')">Genre <span id="sort-genre"></span></th>
+      </tr>
+      <tr class="filter-row">
+        <th></th>
+        <th><input type="text" id="filter-title" placeholder="Search title"></th>
+        <th><input type="text" id="filter-platform" placeholder="Search platform"></th>
+        <th><input type="text" id="filter-release" placeholder="Search date"></th>
+        <th><input type="text" id="filter-playtime" placeholder="Search playtime"></th>
+        <th><input type="text" id="filter-rating" placeholder="Search rating"></th>
+        <th><input type="text" id="filter-genre" placeholder="Search genre"></th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+
+  <button id="resetSortBtn" onclick="resetSort()">Reset Sort</button>
+
+  <script>
+    const SUPABASE_URL = 'https://mbdrtvxcjijgzxlzlfzw.supabase.co';
+    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1iZHJ0dnhjamlqZ3p4bHpsZnp3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDUxNjQ2NzYsImV4cCI6MjA2MDc0MDY3Nn0.8phlukCcNjY0QQ5LDsl4KFnawuUoXwHCR2OuxLrLZVQ';
+
+    const client = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    let fullData = [];
+    let currentSort = { column: null, ascending: true };
+    const visibleColumns = {
+      id: true,
+      title: true,
+      platform: true,
+      release_date: true,
+      playtime: true,
+      rawg_rating: true,
+      genre: true
+    };
+
+    async function loadGames() {
+      const { data, error } = await client
+        .from('games')
+        .select('*');
+
+      if (error) {
+        console.error("Error:", error.message);
+        return;
+      }
+
+      fullData = data;
+      applyFilters();
+    }
+
+    function displayData(data) {
+      const headers = {
+        id: "ID",
+        title: "Title",
+        platform: "Platform",
+        release_date: "Release Date",
+        playtime: "Playtime",
+        rawg_rating: "RAWG Rating",
+        genre: "Genre"
+      };
+
+      const toggleContainer = document.getElementById('columnToggles');
+      toggleContainer.innerHTML = '';
+      for (const key in headers) {
+        const label = document.createElement('label');
+        label.style.marginRight = '0.5rem';
+        const checkbox = document.createElement('input');
+        checkbox.type = 'checkbox';
+        checkbox.checked = visibleColumns[key];
+        checkbox.onchange = () => {
+          visibleColumns[key] = checkbox.checked;
+          applyFilters();
+        };
+        label.appendChild(checkbox);
+        label.append(' ' + headers[key]);
+        toggleContainer.appendChild(label);
+      }
+
+      const headerRow = document.querySelector('#data-table thead tr');
+      const headerSpans = document.querySelectorAll('#data-table thead tr:first-child span');
+      Object.keys(headers).forEach((key, idx) => {
+        const th = headerRow.children[idx];
+        th.style.display = visibleColumns[key] ? '' : 'none';
+        headerSpans[idx].style.display = visibleColumns[key] ? '' : 'none';
+      });
+
+      const filterRow = document.querySelector('#data-table thead tr.filter-row');
+      Object.keys(headers).forEach((key, idx) => {
+        const th = filterRow.children[idx];
+        th.style.display = visibleColumns[key] ? '' : 'none';
+      });
+
+      const tbody = document.querySelector('#data-table tbody');
+      tbody.innerHTML = '';
+      data.forEach(row => {
+        const tr = document.createElement('tr');
+        for (const key in headers) {
+          if (!visibleColumns[key]) continue;
+          const td = document.createElement('td');
+          td.textContent = row[key] ?? '';
+          tr.appendChild(td);
+        }
+        tbody.appendChild(tr);
+      });
+    }
+
+    function applyFilters() {
+      const titleFilter = document.getElementById('filter-title').value.toLowerCase();
+      const platformFilter = document.getElementById('filter-platform').value.toLowerCase();
+      const releaseFilter = document.getElementById('filter-release').value.toLowerCase();
+      const playtimeFilter = document.getElementById('filter-playtime').value.toLowerCase();
+      const ratingFilter = document.getElementById('filter-rating').value.toLowerCase();
+      const genreFilter = document.getElementById('filter-genre').value.toLowerCase();
+
+      let filtered = fullData.filter(row =>
+        (!titleFilter || row.title?.toLowerCase().includes(titleFilter)) &&
+        (!platformFilter || row.platform?.toLowerCase().includes(platformFilter)) &&
+        (!releaseFilter || String(row.release_date).toLowerCase().includes(releaseFilter)) &&
+        (!playtimeFilter || String(row.playtime).toLowerCase().includes(playtimeFilter)) &&
+        (!ratingFilter || String(row.rawg_rating).toLowerCase().includes(ratingFilter)) &&
+        (!genreFilter || row.genre?.toLowerCase().includes(genreFilter))
+      );
+
+      if (currentSort.column) {
+        const { column, ascending } = currentSort;
+        filtered.sort((a, b) => {
+          const valA = a[column] ?? '';
+          const valB = b[column] ?? '';
+          if (!isNaN(valA) && !isNaN(valB)) {
+            return ascending ? valA - valB : valB - valA;
+          }
+          return ascending
+            ? String(valA).localeCompare(String(valB))
+            : String(valB).localeCompare(String(valA));
+        });
+      }
+
+      updateSortIndicators();
+      displayData(filtered);
+    }
+
+    function sortBy(columnKey) {
+      if (currentSort.column === columnKey) {
+        currentSort.ascending = !currentSort.ascending;
+      } else {
+        currentSort.column = columnKey;
+        currentSort.ascending = true;
+      }
+      applyFilters();
+    }
+
+    function resetSort() {
+      currentSort = { column: null, ascending: true };
+      applyFilters();
+    }
+
+    function updateSortIndicators() {
+      document.querySelectorAll("thead th span").forEach(span => span.textContent = "");
+      if (currentSort.column) {
+        const arrow = currentSort.ascending ? "▲" : "▼";
+        const sortSpan = document.getElementById("sort-" + currentSort.column);
+        if (sortSpan) sortSpan.textContent = arrow;
+      }
+    }
+
+    document.querySelectorAll('.filter-row input').forEach(input => {
+      input.addEventListener('input', applyFilters);
+    });
+
+    document.getElementById('darkModeToggle').addEventListener('change', (e) => {
+      document.documentElement.setAttribute('data-theme', e.target.checked ? 'dark' : 'light'); toggle.checked = true;
+    });
+
+    loadGames();
+  </script>
+</body>
+</html>

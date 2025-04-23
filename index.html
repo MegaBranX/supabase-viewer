@@ -9,7 +9,7 @@
     #controls { display:flex; gap:1rem; align-items:center; flex-wrap:wrap; position:relative }
     #controls input, #controls button, #controls select { padding:.5rem; font-size:1rem }
     table { width:100%; border-collapse:collapse; margin-top:1rem }
-    th, td { padding:.5rem; border:1px solid #444 }
+    th, td { padding:0.75rem 1rem;font-size: 1rem; border:1px solid #444 }
     th { background:#222; text-align:left; user-select:none }
     tr:nth-child(even) { background:#1a1a1a }
     #table-container { max-height:70vh; overflow-y:auto }
@@ -39,31 +39,41 @@
       margin-bottom:0.25rem;
       cursor:pointer;
     }
+    /*mobile version*/
      @media (max-width: 768px) {
-  #controls {
-    flex-direction: column;
-    align-items: stretch;
-  }
+     #controls {
+      flex-direction: column;
+      align-items: stretch;
+    }
 
-  #controls > * {
-    width: 100%;
-    margin-bottom: 0.5rem;
-  }
+    #controls > * {
+      width: 100%;
+      margin-bottom: 0.75rem;
+      font-size: 1.1rem;
+    }
 
-  table {
-    display: block;
-    overflow-x: auto;
-    width: 100%;
-  }
+    table {
+      display: block;
+      overflow-x: auto;
+      width: 100%;
+    }
 
-  #column-dropdown {
-    max-height: 150px;
-    font-size: 0.95rem;
-  }
+    #column-dropdown {
+      max-height: 150px;
+      font-size: 0.95rem;
+    }
 
-  th, td {
-    white-space: nowrap;
-  }
+    th, td {
+      white-space: nowrap;
+    }
+
+    #controls select,
+    #controls button,
+    #controls input {
+      border-radius: 0.5rem;
+      border: 1px solid #666;
+}
+
 }
 
   </style>

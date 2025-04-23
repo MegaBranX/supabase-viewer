@@ -9,6 +9,45 @@ This project includes two main parts:
 A self-contained HTML viewer for Supabase tables and views. It allows you to:
 
 - Browse any table or view from your Supabase database
+- Search across all columns in real time
+- Filter by `playtime` using operators (`=`, `>`, `<`, `>=`, `<=`) and values
+- Press `Enter` after entering a playtime value to apply the filter
+- Sort any column (with visual arrows and blue header highlight)
+- Automatically scrolls the sorted column into view
+- Choose columns to display via a toggleable checklist
+- View as either a traditional table or a card layout (for mobile)
+- Remember your preferred view and columns across sessions
+- Paginate or view all rows at once
+- Export all results to CSV with proper quoting and a timestamped filename
+
+### How it works
+
+- Connects using your Supabase project’s anon key (hardcoded in the HTML)
+- Loads all public views via the `list_views()` RPC
+- Fetches full data in batches for performance
+- Defaults to sorting by `title` if available
+
+### Features
+
+| Feature                   | Description |
+|---------------------------|-------------|
+| 🔍 Search                 | Filters across all fields (case-insensitive) |
+| 🎛 Column Toggle         | Show/hide any column — remembers selection per view |
+| 🪄 Toggle View           | Switch between card and table views |
+| ⬆️ Sortable Headers     | Click to toggle ascending/descending sort |
+| ⏳ Playtime Filter       | Enter a numeric value and operator to filter results |
+| 🧭 Auto-Scroll to Column | Scrolls sorted column into view |
+| 💾 Export to CSV         | Downloads a clean spreadsheet of the full dataset |
+| 📱 Responsive            | Card layout for mobile, table for desktop |
+
+### Maintenance Tips
+
+- To make views appear in the dropdown, define them in Supabase and make sure `list_views()` returns them.
+- If you want default sorting on a different column than `title`, update the fallback logic in `initData()`.
+- All logic is inline in the HTML file — no bundling or external libraries required.
+A self-contained HTML viewer for Supabase tables and views. It allows you to:
+
+- Browse any table or view from your Supabase database
 - Search/filter across all columns
 - Sort columns (with visual arrows and column highlighting)
 - Control pagination and export results to CSV

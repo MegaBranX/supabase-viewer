@@ -379,6 +379,27 @@
       });
     }
 
+    function renderCards() {
+      const cardContainer = document.getElementById("card-container");
+      cardContainer.innerHTML = "";
+
+      const pageData = filtered.slice(
+        (currentPage - 1) * pageSize,
+        (currentPage - 1) * pageSize + pageSize
+      );
+
+      pageData.forEach((row) => {
+        const card = document.createElement("div");
+        card.className = "data-card";
+        visibleColumns.forEach((col) => {
+          const div = document.createElement("div");
+          div.innerHTML = `<strong>${col}:</strong> ${row[col] ?? ""}`;
+          card.appendChild(div);
+        });
+        cardContainer.appendChild(card);
+      });
+    }
+
     function renderTable() {
       // Existing table logic
       const thead = document.querySelector("#data-table thead tr");
@@ -399,7 +420,7 @@
           }
           applySort();
           applyPage();
-          renderTable();
+          if (viewMode === "card") renderCards(); // ✅ render cards when needed
         });
         thead.appendChild(th);
       });
@@ -498,7 +519,7 @@
       }
     }
 
-    let viewMode = localStorage.getItem("viewMode") || "table";
+    let viewMode = localStorage.getItem("viewMode");
 
     function updateViewMode() {
       const tableContainer = document.getElementById("table-container");
@@ -515,22 +536,41 @@
     }
 
     window.addEventListener("DOMContentLoaded", async () => {
+      if (!viewMode) {
+        viewMode = window.innerWidth <= 768 ? "card" : "table";
+      }
       document.getElementById("search").addEventListener("input", (e) => {
         const q = e.target.value.toLowerCase();
         filtered = allData.filter((r) =>
-          columns.some((c) =>
-            (r[c] || "").toString().toLowerCase().includes(q)
-          )
+          columns.some((c) => (r[c] || "").toString().toLowerCase().includes(q))
         );
         currentPage = 1;
         applySort();
         applyPage();
+        if (viewMode === "card") {
+          renderCards();
+        } else {
+          renderTable();
+        }
       });
 
       document.getElementById("toggle-view").addEventListener("click", () => {
         viewMode = viewMode === "table" ? "card" : "table";
         localStorage.setItem("viewMode", viewMode);
         updateViewMode();
+      });
+
+      // Set default viewMode if not saved
+      if (!localStorage.getItem("viewMode")) {
+        viewMode = window.innerWidth <= 768 ? "card" : "table";
+      }
+
+      // Handle resizing if user hasn’t picked a view mode
+      window.addEventListener("resize", () => {
+        if (!localStorage.getItem("viewMode")) {
+          viewMode = window.innerWidth <= 768 ? "card" : "table";
+          updateViewMode();
+        }
       });
 
       document
@@ -621,6 +661,20 @@
       await loadViews();
       await initData();
       updateViewMode();
+
+      // Responsive auto-reset of view mode
+      let lastViewport = window.innerWidth <= 768 ? "mobile" : "desktop";
+
+      window.addEventListener("resize", () => {
+        const currentViewport = window.innerWidth <= 768 ? "mobile" : "desktop";
+
+        if (currentViewport !== lastViewport) {
+          localStorage.removeItem("viewMode");
+          viewMode = currentViewport === "mobile" ? "card" : "table";
+          updateViewMode();
+          lastViewport = currentViewport;
+        }
+      });
     });
   </script>
 </body>

@@ -8,7 +8,7 @@
     body { margin:0; padding:1rem; background:#111; color:#eee; font-family:sans-serif }
     #controls { display:flex; gap:1rem; align-items:center; flex-wrap:wrap; position:relative }
     #controls input, #controls button, #controls select { padding:.5rem; font-size:1rem }
-    table { width:100%; border-collapse:collapse; margin-top:1rem }
+    table { width:100%; table-layout: fixed; border-collapse:collapse; margin-top:1rem }
     th, td { padding:0.75rem 1rem;font-size: 1rem; border:1px solid #444 }
     th { background:#222; text-align:left; user-select:none }
     tr:nth-child(even) { background:#1a1a1a }
@@ -40,10 +40,12 @@
       cursor:pointer;
     }
     /*mobile version*/
-     @media (max-width: 768px) {
-     #controls {
-      flex-direction: column;
-      align-items: stretch;
+    @media (max-width: 768px) {
+    table {
+      width: auto;
+      table-layout: auto;
+      border-collapse: collapse;
+      margin-top: 1rem;
     }
 
     #controls > * {
@@ -51,11 +53,17 @@
       margin-bottom: 0.75rem;
       font-size: 1.1rem;
     }
-
+    
+    #table-container {
+      max-width: 100%;
+      overflow-x: auto;
+    }
+    
     table {
       display: block;
       overflow-x: auto;
-      width: 100%;
+      width: auto;
+      table-layout: auto;
     }
 
     #column-dropdown {
@@ -65,6 +73,8 @@
 
     th, td {
       white-space: nowrap;
+      max-width: 400px;
+      overflow-wrap: break-word;
     }
 
     #controls select,
@@ -166,6 +176,7 @@
     }
 
     function renderColumnToggles() {
+      const view = document.getElementById('view-select').value;
       const dropdown = document.getElementById('column-dropdown');
       dropdown.innerHTML = '';
       columns.forEach(col => {
@@ -173,9 +184,9 @@
         const checkbox = document.createElement('input');
         checkbox.type = 'checkbox';
         checkbox.checked = visibleColumns.includes(col);
-        checkbox.addEventListener('change', () => {
-          if (checkbox.checked) {
-            visibleColumns.push(col);
+        checkbox.addEventListener('change', function () {
+          if (this.checked) {
+            if (!visibleColumns.includes(col)) visibleColumns.push(col);
           } else {
             visibleColumns = visibleColumns.filter(c => c !== col);
           }

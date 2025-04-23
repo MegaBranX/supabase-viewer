@@ -9,7 +9,7 @@
     #controls { display:flex; gap:1rem; align-items:center; flex-wrap:wrap; position:relative }
     #controls input, #controls button, #controls select { padding:.5rem; font-size:1rem }
     table { width:100%; table-layout: fixed; border-collapse:collapse; margin-top:1rem }
-    th, td { padding:0.75rem 1rem;font-size: 1rem; border:1px solid #444 }
+    th, td { padding:0.6rem .8rem;font-size: 1rem; border:1px solid #444; word-break: break-word; overflow-wrap: anywhere; }
     th { background:#222; text-align:left; user-select:none }
     tr:nth-child(even) { background:#1a1a1a }
     #table-container { max-height:70vh; overflow-y:auto }
@@ -39,77 +39,78 @@
       margin-bottom:0.25rem;
       cursor:pointer;
     }
+
     /*mobile version*/
     @media (max-width: 768px) {
       body {
         padding: 0.5rem;
       }
 
-  #controls > * {
-    width: 100%;
-    margin-bottom: 0.5rem;
-    font-size: 1rem;
-  }
+      #controls > * {
+        width: 100%;
+        margin-bottom: 0.5rem;
+        font-size: 1rem;
+      }
 
-  table {
-    table-layout: auto;
-    width: 100%;
-    display: block;
-    overflow-x: auto;
-  }
+      table {
+        table-layout: auto;
+        width: 100%;
+        display: block;
+        overflow-x: auto;
+      }
 
-  th, td {
-    font-size: 0.95rem;
-    padding: 0.4rem 0.6rem;
-    white-space: normal;
-    word-break: break-word;
-    max-width: 200px;
-    vertical-align: top;
-    line-height: 1.4;
-  }
+      th, td {
+        font-size: 0.95rem;
+        padding: 0.4rem 0.6rem;
+        white-space: normal;
+        word-break: break-word;
+        overflow-wrap: anywhere;
+        max-width: 200px;
+        vertical-align: top;
+        line-height: 1.4;
+      }
 
-  th {
-    text-align: left;
-    font-weight: 600;
-    color: #6cf;
-  }
+      th {
+        text-align: left;
+        font-weight: 600;
+        color: #6cf;
+      }
 
-  td {
-    color: #ddd;
-  }
+      td {
+        color: #ddd;
+      }
 
-  td:nth-child(2),
-  td:nth-child(3),
-  td:nth-child(4) {
-    font-family: monospace;
-  }
+      td:nth-child(2),
+      td:nth-child(3),
+      td:nth-child(4) {
+        font-family: monospace;
+      }
   
-  td:nth-child(3),
-  td:nth-child(4),
-  th:nth-child(3),
-  th:nth-child(4) {
-   text-align: center;
- }
+      td:nth-child(3),
+      td:nth-child(4),
+      th:nth-child(3),
+      th:nth-child(4) {
+       text-align: center;
+     }
 
+      #column-dropdown {
+        max-height: 150px;
+        font-size: 0.95rem;
+      }
 
-  #column-dropdown {
-    max-height: 150px;
-    font-size: 0.95rem;
-  }
+      #table-container {
+        max-width: 100%;
+        overflow-x: auto;
+      }
 
-  #table-container {
-    max-width: 100%;
-    overflow-x: auto;
-  }
-
-  #controls select,
-  #controls button,
-  #controls input {
-    border-radius: 0.5rem;
-    border: 1px solid #666;
-    font-size: 0.95rem;
-  }
-}
+      #controls select,
+      #controls button,
+      #controls input {
+        border-radius: 0.5rem;
+        border: 1px solid #666;
+        font-size: 0.95rem;
+      }
+    }
 
 
   </style>

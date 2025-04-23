@@ -171,7 +171,7 @@
           }
           // Reorder visibleColumns to match original schema order
           visibleColumns = columns.filter(c => visibleColumns.includes(c));
-          localStorage.setItem('visibleColumns:${view}',JSON.stringify(visibleColumns));
+          localStorage.setItem(`visibleColumns:${view}`,JSON.stringify(visibleColumns));
           renderTable();
         });
         label.appendChild(checkbox);
@@ -242,8 +242,7 @@
         columns = allData.length ? Object.keys(allData[0]) : [];
 
         // Default visible columns
-        const defaultVisible = ["title", "release_date", "playtime"];
-        const saved = localStorage.getItem('visibleColumns:${view}');
+        const saved = localStorage.getItem(`visibleColumns:${view}`);
         if (saved) {
           visibleColumns = JSON.parse(saved).filter(c => columns.includes(c));
         } else {

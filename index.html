@@ -596,12 +596,17 @@
         }
       });
 
+      document.getElementById("search").addEventListener("input", () => {
+        applyFilters();
+      });
+
+
       document.getElementById("clear-playtime-filter").addEventListener("click", () => {
         playtimeFilter = null;
         document.getElementById("playtime-value").value = "";
         applyFilters();
       });
-    
+
 
       document.getElementById("toggle-view").addEventListener("click", () => {
         viewMode = viewMode === "table" ? "card" : "table";

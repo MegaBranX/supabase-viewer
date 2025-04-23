@@ -1,521 +1,628 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Supabase Viewer (Tables & Views)</title>
-    <style>
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Supabase Viewer (Tables & Views)</title>
+  <style>
+    body {
+      margin: 0;
+      padding: 1rem;
+      background: #111;
+      color: #eee;
+      font-family: sans-serif;
+    }
+
+    #controls {
+      display: flex;
+      gap: 1rem;
+      align-items: center;
+      flex-wrap: wrap;
+      position: relative;
+    }
+
+    #controls input,
+    #controls button,
+    #controls select {
+      padding: 0.5rem;
+      font-size: 1rem;
+    }
+
+    /* Table view */
+    table {
+      width: 100%;
+      table-layout: fixed;
+      border-collapse: collapse;
+      margin-top: 1rem;
+    }
+
+    th,
+    td {
+      padding: 0.6rem 0.8rem;
+      font-size: 1rem;
+      border: 1px solid #444;
+      word-break: break-word;
+      overflow-wrap: anywhere;
+    }
+
+    th {
+      background: #222;
+      text-align: left;
+      user-select: none;
+    }
+
+    tr:nth-child(even) {
+      background: #1a1a1a;
+    }
+
+    #table-container {
+      max-height: 70vh;
+      overflow-y: auto;
+      overflow-x: auto;
+    }
+
+    /* Pagination */
+    #pagination {
+      margin-top: 1rem;
+    }
+
+    #pagination button {
+      margin-right: 0.5rem;
+      padding: 0.5rem 1rem;
+    }
+
+    /* Errors */
+    #error {
+      color: #f66;
+      margin-top: 1rem;
+    }
+
+    th.sorted {
+      color: #6cf;
+    }
+
+    /* Column dropdown */
+    #column-toggle-container {
+      position: relative;
+    }
+
+    #column-toggle-button {
+      position: relative;
+      z-index: 2;
+    }
+
+    #column-dropdown {
+      position: absolute;
+      top: 100%;
+      left: 0;
+      background: #222;
+      border: 1px solid #555;
+      padding: 0.5rem;
+      display: none;
+      max-height: 200px;
+      overflow-y: auto;
+      z-index: 3;
+      min-width: 250px;
+    }
+
+    #column-dropdown label {
+      display: block;
+      margin-bottom: 0.25rem;
+      cursor: pointer;
+    }
+
+    /* Toggle view: only one visible at a time */
+    #table-container,
+    #card-container {
+      display: none;
+    }
+
+    #table-container.visible {
+      display: block;
+    }
+
+    #card-container.visible {
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+      margin-top: 1rem;
+    }
+
+    /* Card layout */
+    .data-card {
+      background: #1a1a1a;
+      padding: 1rem;
+      border: 1px solid #333;
+      border-radius: 0.5rem;
+    }
+
+    .data-card div {
+      margin-bottom: 0.3rem;
+    }
+
+    .data-card strong {
+      color: #6cf;
+      display: inline-block;
+      min-width: 100px;
+    }
+
+    /* Mobile styles */
+    @media (max-width: 768px) {
       body {
-        margin: 0;
-        padding: 1rem;
-        background: #111;
-        color: #eee;
-        font-family: sans-serif;
-      }
-      #controls {
-        display: flex;
-        gap: 1rem;
-        align-items: center;
-        flex-wrap: wrap;
-        position: relative;
-      }
-      #controls input,
-      #controls button,
-      #controls select {
         padding: 0.5rem;
+      }
+
+      #controls>* {
+        width: 100%;
+        margin-bottom: 0.5rem;
         font-size: 1rem;
       }
+
       table {
-        width: 100%;
-        table-layout: fixed;
-        border-collapse: collapse;
-        margin-top: 1rem;
+        display: block;
+        table-layout: auto;
+        min-width: 600px;
       }
+
       th,
       td {
-        padding: 0.6rem 0.8rem;
-        font-size: 1rem;
-        border: 1px solid #444;
+        font-size: 0.95rem;
+        padding: 0.4rem 0.6rem;
+        white-space: normal;
+        word-break: break-word;
+        overflow-wrap: break-word;
+        max-width: 200px;
+        vertical-align: top;
+        line-height: 1.4;
+        text-overflow: ellipsis;
+      }
+
+      th {
+        text-align: left;
+        font-weight: 600;
+        color: #6cf;
+        white-space: nowrap;
+      }
+
+      td {
+        color: #ddd;
+      }
+
+      td:nth-child(2),
+      td:nth-child(3),
+      td:nth-child(4),
+      td:nth-child(5),
+      th:nth-child(2),
+      th:nth-child(3),
+      th:nth-child(4),
+      th:nth-child(5) {
+        font-family: monospace;
+        font-size: 0.9rem;
+        text-align: center;
+      }
+
+      td:nth-child(1),
+      td:nth-child(6) {
+        max-width: 250px;
         word-break: break-word;
         overflow-wrap: anywhere;
       }
-      th {
-        background: #222;
-        text-align: left;
-        user-select: none;
-      }
-      tr:nth-child(even) {
-        background: #1a1a1a;
-      }
-      #table-container {
-        max-height: 70vh;
-        overflow-y: auto;
-        overflow-x: auto;
-      }
-      #pagination {
-        margin-top: 1rem;
-      }
-      #pagination button {
-        margin-right: 0.5rem;
-        padding: 0.5rem 1rem;
-      }
-      #error {
-        color: #f66;
-        margin-top: 1rem;
-      }
-      th.sorted {
-        color: #6cf;
+
+      td:nth-child(4),
+      td:nth-child(5) {
+        max-width: 160px;
       }
 
-      /* Column dropdown */
-      #column-toggle-container {
-        position: relative;
-      }
-      #column-toggle-button {
-        position: relative;
-        z-index: 2;
-      }
       #column-dropdown {
+        max-height: 150px;
+        font-size: 0.95rem;
+      }
+
+      #table-container {
+        position: relative;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+      }
+
+      #table-container::after {
+        content: "";
         position: absolute;
-        top: 100%;
-        left: 0;
-        background: #222;
-        border: 1px solid #555;
-        padding: 0.5rem;
-        display: none;
-        max-height: 200px;
-        overflow-y: auto;
-        z-index: 3;
-        min-width: 250px;
-      }
-      #column-dropdown label {
-        display: block;
-        margin-bottom: 0.25rem;
-        cursor: pointer;
+        top: 0;
+        right: 0;
+        width: 30px;
+        height: 100%;
+        background: linear-gradient(to right, transparent, #111);
+        pointer-events: none;
       }
 
-      /*mobile version*/
-      @media (max-width: 768px) {
-        body {
-          padding: 0.5rem;
-        }
-
-        #controls > * {
-          width: 100%;
-          margin-bottom: 0.5rem;
-          font-size: 1rem;
-        }
-
-        table {
-          display: block;
-          table-layout: auto;
-          min-width: 600px;
-        }
-
-        th,
-        td {
-          font-size: 0.95rem;
-          padding: 0.4rem 0.6rem;
-          white-space: normal;
-          word-break: break-word;
-          overflow-wrap: break-word;
-          max-width: 200px;
-          vertical-align: top;
-          line-height: 1.4;
-          text-overflow: ellipsis;
-        }
-
-        th {
-          text-align: left;
-          font-weight: 600;
-          color: #6cf;
-          white-space: nowrap; /* ✅ Prevent wrapping */
-        }
-
-        td {
-          color: #ddd;
-        }
-
-        td:nth-child(2),
-        td:nth-child(3),
-        td:nth-child(4),
-        td:nth-child(5),
-        th:nth-child(2),
-        th:nth-child(3),
-        th:nth-child(4),
-        th:nth-child(5) {
-          font-family: monospace;
-          font-size: 0.9rem;
-          text-align: center;
-        }
-
-        td:nth-child(1),
-        td:nth-child(6) {
-          max-width: 250px;
-          word-break: break-word;
-          overflow-wrap: anywhere;
-        }
-
-        td:nth-child(4),
-        td:nth-child(5) {
-          max-width: 160px;
-        }
-
-        #column-dropdown {
-          max-height: 150px;
-          font-size: 0.95rem;
-        }
-
-        #table-container {
-          position: relative;
-          overflow-x: auto;
-          -webkit-overflow-scrolling: touch;
-        }
-
-        #table-container::after {
-          content: "";
-          position: absolute;
-          top: 0;
-          right: 0;
-          width: 30px;
-          height: 100%;
-          background: linear-gradient(to right, transparent, #111);
-          pointer-events: none;
-        }
-
-        #controls select,
-        #controls button,
-        #controls input {
-          border-radius: 0.5rem;
-          border: 1px solid #666;
-          font-size: 0.95rem;
-        }
+      #controls select,
+      #controls button,
+      #controls input {
+        border-radius: 0.5rem;
+        border: 1px solid #666;
+        font-size: 0.95rem;
       }
-    </style>
-  </head>
-  <body>
-    <h1>Supabase Viewer (Tables & Views)</h1>
+    }
+  </style>
+</head>
 
-    <div id="controls">
-      <label for="view-select">Select View:</label>
-      <select id="view-select"></select>
+<body>
+  <h1>Supabase Viewer (Tables & Views)</h1>
 
-      <input id="search" type="text" placeholder="🔍 Search…" />
-      <button id="reset-sort">Reset Sort</button>
-      <button id="reset-columns">Reset Columns</button>
+  <div id="controls">
+    <label for="view-select">Select View:</label>
+    <select id="view-select"></select>
 
-      <div id="column-toggle-container">
-        <button id="column-toggle-button">Select Columns ▼</button>
-        <div id="column-dropdown"></div>
-      </div>
+    <input id="search" type="text" placeholder="🔍 Search…" />
+    <button id="reset-sort">Reset Sort</button>
+    <button id="reset-columns">Reset Columns</button>
+    <button id="toggle-view">🪄 Toggle View</button>
 
-      <label for="page-size">Show per page:</label>
-      <select id="page-size">
-        <option value="10">10</option>
-        <option value="25">25</option>
-        <option value="50">50</option>
-        <option value="100" selected>100</option>
-        <option value="all">All</option>
-      </select>
-
-      <button id="export">Export to CSV</button>
+    <div id="column-toggle-container">
+      <button id="column-toggle-button">Select Columns ▼</button>
+      <div id="column-dropdown"></div>
     </div>
 
-    <div id="error"></div>
-    <div id="table-container">
-      <table id="data-table">
-        <thead>
-          <tr id="table-headers"></tr>
-        </thead>
-        <tbody></tbody>
-      </table>
-    </div>
+    <label for="page-size">Show per page:</label>
+    <select id="page-size">
+      <option value="10">10</option>
+      <option value="25">25</option>
+      <option value="50">50</option>
+      <option value="100" selected>100</option>
+      <option value="all">All</option>
+    </select>
 
-    <div id="pagination">
-      <button id="prev" disabled>← Prev</button>
-      <span id="page-info"></span>
-      <button id="next" disabled>Next →</button>
-    </div>
+    <button id="export">Export to CSV</button>
+  </div>
 
-    <script type="module">
-      import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm";
+  <div id="error"></div>
+  <div id="table-container">
+    <table id="data-table">
+      <thead>
+        <tr id="table-headers"></tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+  </div>
 
-      const SUPABASE_URL = "https://mbdrtvxcjijgzxlzlfzw.supabase.co";
-      const SUPABASE_ANON_KEY =
-        "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1iZHJ0dnhjamlqZ3p4bHpsZnp3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDUxNjQ2NzYsImV4cCI6MjA2MDc0MDY3Nn0.8phlukCcNjY0QQ5LDsl4KFnawuUoXwHCR2OuxLrLZVQ";
-      const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+  <div id="card-container"></div>
 
-      let allData = [],
-        filtered = [];
-      let pageSize = 100,
-        currentPage = 1;
-      let sortKey = null,
-        sortAsc = true;
-      let columns = [];
-      let visibleColumns = [];
+  <div id="pagination">
+    <button id="prev" disabled>← Prev</button>
+    <span id="page-info"></span>
+    <button id="next" disabled>Next →</button>
+  </div>
 
-      async function loadViews() {
-        try {
-          const { data: views, error } = await supabase.rpc("list_views");
-          if (error) throw error;
-          const select = document.getElementById("view-select");
-          const viewNames = [
-            "games",
-            ...views.map((v) => v.name).filter((n) => n !== "games"),
-          ];
-          viewNames.forEach((name) => {
-            const opt = document.createElement("option");
-            opt.value = name;
-            opt.textContent = name;
-            select.appendChild(opt);
-          });
-          select.value = "games";
-          select.addEventListener("change", () => initData());
-        } catch (err) {
-          document.getElementById("error").textContent = err.message;
-        }
-      }
+  <script type="module">
+    import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm";
 
-      async function fetchAll(view, batchSize = 1000) {
-        let from = 0,
-          chunk,
-          result = [];
-        do {
-          const { data, error } = await supabase
-            .from(view)
-            .select("*")
-            .range(from, from + batchSize - 1);
-          if (error) throw error;
-          chunk = data;
-          result.push(...chunk);
-          from += batchSize;
-        } while (chunk.length === batchSize);
-        return result;
-      }
+    const SUPABASE_URL = "https://mbdrtvxcjijgzxlzlfzw.supabase.co";
+    const SUPABASE_ANON_KEY =
+      "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1iZHJ0dnhjamlqZ3p4bHpsZnp3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDUxNjQ2NzYsImV4cCI6MjA2MDc0MDY3Nn0.8phlukCcNjY0QQ5LDsl4KFnawuUoXwHCR2OuxLrLZVQ";
+    const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-      function renderColumnToggles() {
-        const view = document.getElementById("view-select").value;
-        const dropdown = document.getElementById("column-dropdown");
-        dropdown.innerHTML = "";
-        columns.forEach((col) => {
-          const label = document.createElement("label");
-          const checkbox = document.createElement("input");
-          checkbox.type = "checkbox";
-          checkbox.checked = visibleColumns.includes(col);
-          checkbox.addEventListener("change", function () {
-            if (this.checked) {
-              if (!visibleColumns.includes(col)) visibleColumns.push(col);
-            } else {
-              visibleColumns = visibleColumns.filter((c) => c !== col);
-            }
-            // Reorder visibleColumns to match original schema order
-            visibleColumns = columns.filter((c) => visibleColumns.includes(c));
-            localStorage.setItem(
-              `visibleColumns:${view}`,
-              JSON.stringify(visibleColumns)
-            );
-            renderTable();
-          });
-          label.appendChild(checkbox);
-          label.append(" " + col);
-          dropdown.appendChild(label);
+    let allData = [],
+      filtered = [];
+    let pageSize = 100,
+      currentPage = 1;
+    let sortKey = null,
+      sortAsc = true;
+    let columns = [];
+    let visibleColumns = [];
+
+    async function loadViews() {
+      try {
+        const { data: views, error } = await supabase.rpc("list_views");
+        if (error) throw error;
+        const select = document.getElementById("view-select");
+        const viewNames = [
+          "games",
+          ...views.map((v) => v.name).filter((n) => n !== "games"),
+        ];
+        viewNames.forEach((name) => {
+          const opt = document.createElement("option");
+          opt.value = name;
+          opt.textContent = name;
+          select.appendChild(opt);
         });
+        select.value = "games";
+        select.addEventListener("change", () => initData());
+      } catch (err) {
+        document.getElementById("error").textContent = err.message;
       }
+    }
 
-      function renderTable() {
-        const thead = document.querySelector("#data-table thead tr");
-        thead.innerHTML = "";
+    async function fetchAll(view, batchSize = 1000) {
+      let from = 0,
+        chunk,
+        result = [];
+      do {
+        const { data, error } = await supabase
+          .from(view)
+          .select("*")
+          .range(from, from + batchSize - 1);
+        if (error) throw error;
+        chunk = data;
+        result.push(...chunk);
+        from += batchSize;
+      } while (chunk.length === batchSize);
+      return result;
+    }
+
+    function renderColumnToggles() {
+      const view = document.getElementById("view-select").value;
+      const dropdown = document.getElementById("column-dropdown");
+      dropdown.innerHTML = "";
+      columns.forEach((col) => {
+        const label = document.createElement("label");
+        const checkbox = document.createElement("input");
+        checkbox.type = "checkbox";
+        checkbox.checked = visibleColumns.includes(col);
+        checkbox.addEventListener("change", function () {
+          if (this.checked) {
+            if (!visibleColumns.includes(col)) visibleColumns.push(col);
+          } else {
+            visibleColumns = visibleColumns.filter((c) => c !== col);
+          }
+          // Reorder visibleColumns to match original schema order
+          visibleColumns = columns.filter((c) => visibleColumns.includes(c));
+          localStorage.setItem(
+            `visibleColumns:${view}`,
+            JSON.stringify(visibleColumns)
+          );
+          renderTable();
+        });
+        label.appendChild(checkbox);
+        label.append(" " + col);
+        dropdown.appendChild(label);
+      });
+    }
+
+    function renderTable() {
+      // Existing table logic
+      const thead = document.querySelector("#data-table thead tr");
+      const tbody = document.querySelector("#data-table tbody");
+      thead.innerHTML = "";
+      tbody.innerHTML = "";
+
+      visibleColumns.forEach((col) => {
+        const th = document.createElement("th");
+        th.className = col === sortKey ? "sorted" : "";
+        th.innerHTML = col + (col === sortKey ? (sortAsc ? " ▲" : " ▼") : "");
+        th.style.cursor = "pointer";
+        th.addEventListener("click", () => {
+          if (sortKey === col) sortAsc = !sortAsc;
+          else {
+            sortKey = col;
+            sortAsc = true;
+          }
+          applySort();
+          applyPage();
+          renderTable();
+        });
+        thead.appendChild(th);
+      });
+
+      applySort();
+      applyPage();
+
+      // Card rendering
+      const cardContainer = document.getElementById("card-container");
+      cardContainer.innerHTML = ""; // Clear old cards
+
+      const pageData = filtered.slice(
+        (currentPage - 1) * pageSize,
+        (currentPage - 1) * pageSize + pageSize
+      );
+
+      pageData.forEach((row) => {
+        const card = document.createElement("div");
+        card.className = "data-card";
         visibleColumns.forEach((col) => {
-          const th = document.createElement("th");
-          th.className = col === sortKey ? "sorted" : "";
-          th.innerHTML = col + (col === sortKey ? (sortAsc ? " ▲" : " ▼") : "");
-          th.style.cursor = "pointer";
-          th.addEventListener("click", () => {
-            if (sortKey === col) sortAsc = !sortAsc;
-            else {
-              sortKey = col;
-              sortAsc = true;
-            }
-            applySort();
-            applyPage();
-            renderTable();
-          });
-          thead.appendChild(th);
+          const div = document.createElement("div");
+          div.innerHTML = `<strong>${col}:</strong> ${row[col] ?? ""}`;
+          card.appendChild(div);
         });
+        cardContainer.appendChild(card);
+      });
+    }
+
+
+    function applySort() {
+      if (!sortKey) return;
+      filtered.sort((a, b) => {
+        const va = a[sortKey],
+          vb = b[sortKey];
+        if (va == null || vb == null) return 0;
+        if (typeof va === "number") return sortAsc ? va - vb : vb - va;
+        const sa = va.toString().toLowerCase(),
+          sb = vb.toString().toLowerCase();
+        return sortAsc ? sa.localeCompare(sb) : sb.localeCompare(sa);
+      });
+    }
+
+    function applyPage() {
+      const start = (currentPage - 1) * pageSize;
+      const pageData = filtered.slice(start, start + pageSize);
+      const tbody = document.querySelector("#data-table tbody");
+      tbody.innerHTML = "";
+      pageData.forEach((row) => {
+        const tr = document.createElement("tr");
+        visibleColumns.forEach((c) => {
+          const td = document.createElement("td");
+          td.textContent = row[c] || "";
+          tr.appendChild(td);
+        });
+        tbody.appendChild(tr);
+      });
+      const total = filtered.length;
+      const totalPages = pageSize === "all" ? 1 : Math.ceil(total / pageSize);
+      document.getElementById("prev").disabled = currentPage <= 1;
+      document.getElementById("next").disabled = currentPage >= totalPages;
+      document.getElementById(
+        "page-info"
+      ).textContent = `Page ${currentPage} of ${totalPages} (${total} rows)`;
+      document.getElementById("pagination").style.display =
+        pageSize === "all" ? "none" : "block";
+    }
+
+    async function initData() {
+      const view = document.getElementById("view-select").value;
+      document.getElementById("error").textContent = "";
+      try {
+        allData = await fetchAll(view);
+        filtered = [...allData];
+        columns = allData.length ? Object.keys(allData[0]) : [];
+
+        // Default visible columns
+        const saved = localStorage.getItem(`visibleColumns:${view}`);
+        if (saved) {
+          visibleColumns = JSON.parse(saved).filter((c) =>
+            columns.includes(c)
+          );
+        } else {
+          const defaultVisible = ["title", "release_date", "playtime"];
+          visibleColumns = defaultVisible.filter((c) => columns.includes(c));
+          if (visibleColumns.length === 0) visibleColumns = [...columns];
+        }
+
+        document.getElementById("search").value = "";
+        sortKey = columns.includes("title") ? "title" : null;
+        sortAsc = true;
+        currentPage = 1;
+        renderColumnToggles();
+        renderTable();
+      } catch (err) {
+        document.getElementById("error").textContent = err.message;
+      }
+    }
+
+    let viewMode = localStorage.getItem("viewMode") || "table";
+
+    function updateViewMode() {
+      const tableContainer = document.getElementById("table-container");
+      const cardContainer = document.getElementById("card-container");
+
+      tableContainer.classList.remove("visible");
+      cardContainer.classList.remove("visible");
+
+      if (viewMode === "table") {
+        tableContainer.classList.add("visible");
+      } else {
+        cardContainer.classList.add("visible");
+      }
+    }
+
+    window.addEventListener("DOMContentLoaded", async () => {
+      document.getElementById("search").addEventListener("input", (e) => {
+        const q = e.target.value.toLowerCase();
+        filtered = allData.filter((r) =>
+          columns.some((c) =>
+            (r[c] || "").toString().toLowerCase().includes(q)
+          )
+        );
+        currentPage = 1;
         applySort();
         applyPage();
-      }
+      });
 
-      function applySort() {
-        if (!sortKey) return;
-        filtered.sort((a, b) => {
-          const va = a[sortKey],
-            vb = b[sortKey];
-          if (va == null || vb == null) return 0;
-          if (typeof va === "number") return sortAsc ? va - vb : vb - va;
-          const sa = va.toString().toLowerCase(),
-            sb = vb.toString().toLowerCase();
-          return sortAsc ? sa.localeCompare(sb) : sb.localeCompare(sa);
-        });
-      }
+      document.getElementById("toggle-view").addEventListener("click", () => {
+        viewMode = viewMode === "table" ? "card" : "table";
+        localStorage.setItem("viewMode", viewMode);
+        updateViewMode();
+      });
 
-      function applyPage() {
-        const start = (currentPage - 1) * pageSize;
-        const pageData = filtered.slice(start, start + pageSize);
-        const tbody = document.querySelector("#data-table tbody");
-        tbody.innerHTML = "";
-        pageData.forEach((row) => {
-          const tr = document.createElement("tr");
-          visibleColumns.forEach((c) => {
-            const td = document.createElement("td");
-            td.textContent = row[c] || "";
-            tr.appendChild(td);
-          });
-          tbody.appendChild(tr);
-        });
-        const total = filtered.length;
-        const totalPages = pageSize === "all" ? 1 : Math.ceil(total / pageSize);
-        document.getElementById("prev").disabled = currentPage <= 1;
-        document.getElementById("next").disabled = currentPage >= totalPages;
-        document.getElementById(
-          "page-info"
-        ).textContent = `Page ${currentPage} of ${totalPages} (${total} rows)`;
-        document.getElementById("pagination").style.display =
-          pageSize === "all" ? "none" : "block";
-      }
+      document
+        .getElementById("reset-columns")
+        .addEventListener("click", () => {
+          const view = document.getElementById("view-select").value;
+          localStorage.removeItem(`visibleColumns:${view}`);
 
-      async function initData() {
-        const view = document.getElementById("view-select").value;
-        document.getElementById("error").textContent = "";
-        try {
-          allData = await fetchAll(view);
-          filtered = [...allData];
-          columns = allData.length ? Object.keys(allData[0]) : [];
+          const defaultVisible = ["title", "release_date", "playtime"];
+          visibleColumns = defaultVisible.filter((c) => columns.includes(c));
+          if (visibleColumns.length === 0) visibleColumns = [...columns]; // fallback
 
-          // Default visible columns
-          const saved = localStorage.getItem(`visibleColumns:${view}`);
-          if (saved) {
-            visibleColumns = JSON.parse(saved).filter((c) =>
-              columns.includes(c)
-            );
-          } else {
-            const defaultVisible = ["title", "release_date", "playtime"];
-            visibleColumns = defaultVisible.filter((c) => columns.includes(c));
-            if (visibleColumns.length === 0) visibleColumns = [...columns];
-          }
-
-          document.getElementById("search").value = "";
           sortKey = columns.includes("title") ? "title" : null;
           sortAsc = true;
           currentPage = 1;
+
+          document.getElementById("table-container").scrollTop = 0;
+          console.log("Columns reset to default");
+
           renderColumnToggles();
           renderTable();
-        } catch (err) {
-          document.getElementById("error").textContent = err.message;
-        }
-      }
-
-      window.addEventListener("DOMContentLoaded", async () => {
-        document.getElementById("search").addEventListener("input", (e) => {
-          const q = e.target.value.toLowerCase();
-          filtered = allData.filter((r) =>
-            columns.some((c) =>
-              (r[c] || "").toString().toLowerCase().includes(q)
-            )
-          );
-          currentPage = 1;
-          applySort();
-          applyPage();
         });
 
-        document
-          .getElementById("reset-columns")
-          .addEventListener("click", () => {
-            const view = document.getElementById("view-select").value;
-            localStorage.removeItem(`visibleColumns:${view}`);
-
-            const defaultVisible = ["title", "release_date", "playtime"];
-            visibleColumns = defaultVisible.filter((c) => columns.includes(c));
-            if (visibleColumns.length === 0) visibleColumns = [...columns]; // fallback
-
-            sortKey = columns.includes("title") ? "title" : null;
-            sortAsc = true;
-            currentPage = 1;
-
-            document.getElementById("table-container").scrollTop = 0;
-            console.log("Columns reset to default");
-
-            renderColumnToggles();
-            renderTable();
-          });
-
-        document.getElementById("page-size").addEventListener("change", (e) => {
-          const v = e.target.value;
-          pageSize = v === "all" ? filtered.length : parseInt(v);
-          currentPage = 1;
-          applyPage();
-        });
-
-        document.getElementById("prev").addEventListener("click", () => {
-          currentPage--;
-          applyPage();
-        });
-
-        document.getElementById("next").addEventListener("click", () => {
-          currentPage++;
-          applyPage();
-        });
-
-        document.getElementById("reset-sort").addEventListener("click", () => {
-          sortKey = columns.includes("title") ? "title" : null;
-          sortAsc = true;
-          applySort();
-          applyPage();
-          renderTable();
-        });
-
-        document.getElementById("export").addEventListener("click", () => {
-          const rows = [
-            columns,
-            ...allData.map((r) => columns.map((c) => r[c] || "")),
-          ];
-          const csv = rows
-            .map((r) =>
-              r.map((v) => `"${v.toString().replace(/"/g, '""')}"`).join(",")
-            )
-            .join("\n");
-          const blob = new Blob([csv], { type: "text/csv" });
-          const a = Object.assign(document.createElement("a"), {
-            href: URL.createObjectURL(blob),
-            download: `export_${new Date()
-              .toISOString()
-              .replace(/[:.]/g, "-")}.csv`,
-          });
-          document.body.appendChild(a);
-          a.click();
-          a.remove();
-        });
-
-        const toggleBtn = document.getElementById("column-toggle-button");
-        const dropdown = document.getElementById("column-dropdown");
-        toggleBtn.addEventListener("click", () => {
-          dropdown.style.display =
-            dropdown.style.display === "block" ? "none" : "block";
-        });
-
-        document.addEventListener("click", (e) => {
-          if (
-            !document
-              .getElementById("column-toggle-container")
-              .contains(e.target)
-          ) {
-            dropdown.style.display = "none";
-          }
-        });
-
-        await loadViews();
-        await initData();
+      document.getElementById("page-size").addEventListener("change", (e) => {
+        const v = e.target.value;
+        pageSize = v === "all" ? filtered.length : parseInt(v);
+        currentPage = 1;
+        applyPage();
       });
-    </script>
-  </body>
+
+      document.getElementById("prev").addEventListener("click", () => {
+        currentPage--;
+        applyPage();
+      });
+
+      document.getElementById("next").addEventListener("click", () => {
+        currentPage++;
+        applyPage();
+      });
+
+      document.getElementById("reset-sort").addEventListener("click", () => {
+        sortKey = columns.includes("title") ? "title" : null;
+        sortAsc = true;
+        applySort();
+        applyPage();
+        renderTable();
+      });
+
+      document.getElementById("export").addEventListener("click", () => {
+        const rows = [
+          columns,
+          ...allData.map((r) => columns.map((c) => r[c] || "")),
+        ];
+        const csv = rows
+          .map((r) =>
+            r.map((v) => `"${v.toString().replace(/"/g, '""')}"`).join(",")
+          )
+          .join("\n");
+        const blob = new Blob([csv], { type: "text/csv" });
+        const a = Object.assign(document.createElement("a"), {
+          href: URL.createObjectURL(blob),
+          download: `export_${new Date()
+            .toISOString()
+            .replace(/[:.]/g, "-")}.csv`,
+        });
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+      });
+
+      const toggleBtn = document.getElementById("column-toggle-button");
+      const dropdown = document.getElementById("column-dropdown");
+      toggleBtn.addEventListener("click", () => {
+        dropdown.style.display =
+          dropdown.style.display === "block" ? "none" : "block";
+      });
+
+      document.addEventListener("click", (e) => {
+        if (
+          !document
+            .getElementById("column-toggle-container")
+            .contains(e.target)
+        ) {
+          dropdown.style.display = "none";
+        }
+      });
+
+      await loadViews();
+      await initData();
+      updateViewMode();
+    });
+  </script>
+</body>
+
 </html>

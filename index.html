@@ -253,8 +253,19 @@
   <div id="controls">
     <label for="view-select">Select View:</label>
     <select id="view-select"></select>
-
     <input id="search" type="text" placeholder="🔍 Search…" />
+    <label for="playtime-filter">Playtime:</label>
+    <select id="playtime-operator">
+      <option value=">">&gt;</option>
+      <option value="<">&lt;</option>
+      <option value=">=">&ge;</option>
+      <option value="<=">&le;</option>
+      <option value="=">=</option>
+    </select>
+    <input id="playtime-value" type="number" min="0" step="1" style="width: 80px;" />
+    <button id="apply-playtime-filter">Filter</button>
+    <button id="clear-playtime-filter">Clear</button>
+
     <button id="reset-sort">Reset Sort</button>
     <button id="reset-columns">Reset Columns</button>
     <button id="toggle-view">🪄 Toggle View</button>
@@ -420,7 +431,15 @@
           }
           applySort();
           applyPage();
-          if (viewMode === "card") renderCards(); // ✅ render cards when needed
+          if (viewMode === "card") {
+            renderCards();
+          } else {
+            renderTable();
+          }
+          // 👇 scroll the sorted column header into view
+          setTimeout(() => {
+            th.scrollIntoView({ behavior: "smooth", inline: "center", block: "nearest" });
+          }, 0);
         });
         thead.appendChild(th);
       });
@@ -536,23 +555,53 @@
     }
 
     window.addEventListener("DOMContentLoaded", async () => {
-      if (!viewMode) {
-        viewMode = window.innerWidth <= 768 ? "card" : "table";
-      }
-      document.getElementById("search").addEventListener("input", (e) => {
-        const q = e.target.value.toLowerCase();
-        filtered = allData.filter((r) =>
-          columns.some((c) => (r[c] || "").toString().toLowerCase().includes(q))
-        );
+      let playtimeFilter = null;
+
+      function applyFilters() {
+        const searchQuery = document.getElementById("search").value.toLowerCase();
+
+        filtered = allData.filter((r) => {
+          const matchesSearch = columns.some((c) =>
+            (r[c] || "").toString().toLowerCase().includes(searchQuery)
+          );
+
+          const playtime = parseFloat(r.playtime ?? 0);
+          let matchesPlaytime = true;
+
+          if (playtimeFilter) {
+            const { operator, value } = playtimeFilter;
+            switch (operator) {
+              case ">": matchesPlaytime = playtime > value; break;
+              case "<": matchesPlaytime = playtime < value; break;
+              case ">=": matchesPlaytime = playtime >= value; break;
+              case "<=": matchesPlaytime = playtime <= value; break;
+              case "=": matchesPlaytime = playtime === value; break;
+            }
+          }
+
+          return matchesSearch && matchesPlaytime;
+        });
+
         currentPage = 1;
         applySort();
         applyPage();
-        if (viewMode === "card") {
-          renderCards();
-        } else {
-          renderTable();
+        viewMode === "card" ? renderCards() : renderTable();
+      }
+      document.getElementById("apply-playtime-filter").addEventListener("click", () => {
+        const op = document.getElementById("playtime-operator").value;
+        const val = parseFloat(document.getElementById("playtime-value").value);
+        if (!isNaN(val)) {
+          playtimeFilter = { operator: op, value: val };
+          applyFilters();
         }
       });
+
+      document.getElementById("clear-playtime-filter").addEventListener("click", () => {
+        playtimeFilter = null;
+        document.getElementById("playtime-value").value = "";
+        applyFilters();
+      });
+    
 
       document.getElementById("toggle-view").addEventListener("click", () => {
         viewMode = viewMode === "table" ? "card" : "table";

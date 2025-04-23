@@ -432,16 +432,21 @@
           .getElementById("reset-columns")
           .addEventListener("click", () => {
             const view = document.getElementById("view-select").value;
+            localStorage.removeItem(`visibleColumns:${view}`);
+
             const defaultVisible = ["title", "release_date", "playtime"];
             visibleColumns = defaultVisible.filter((c) => columns.includes(c));
-            if (visibleColumns.length === 0) visibleColumns = [...columns];
-            localStorage.setItem(
-              `visibleColumns:${view}`,
-              JSON.stringify(visibleColumns)
-            );
+            if (visibleColumns.length === 0) visibleColumns = [...columns]; // fallback
+
+            sortKey = columns.includes("title") ? "title" : null;
+            sortAsc = true;
+            currentPage = 1;
+
+            document.getElementById("table-container").scrollTop = 0;
+            console.log("Columns reset to default");
+
             renderColumnToggles();
             renderTable();
-            console.log("Columns reset to default");
           });
 
         document.getElementById("page-size").addEventListener("change", (e) => {

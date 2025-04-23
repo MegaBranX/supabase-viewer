@@ -1,299 +1,225 @@
 <!DOCTYPE html>
-<html lang="en" data-theme="dark">
+<html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>Supabase Viewer – Final Version</title>
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Supabase Viewer (Tables & Views)</title>
   <style>
-    :root {
-      --bg-color: #ffffff;
-      --text-color: #000000;
-      --sticky-header-bg: #ffffff;
-    }
-
-    [data-theme="dark"] {
-      --bg-color: #121212;
-      --text-color: #ffffff;
-      --sticky-header-bg: #1e1e1e;
-    }
-
-    body {
-      background-color: var(--bg-color);
-      color: var(--text-color);
-      font-family: sans-serif;
-      padding: 1rem;
-    }
-
-    input[type="text"] {
-      padding: 0.3rem;
-      font-size: 0.9rem;
-      width: 100%;
-      box-sizing: border-box;
-    }
-
-    table {
-      border-collapse: collapse;
-      width: 100%;
-      margin-top: 1rem;
-      table-layout: auto;
-    }
-
-    th, td {
-      border: 1px solid #ccc;
-      padding: 0.5rem;
-      text-align: left;
-      background-color: var(--bg-color);
-      color: var(--text-color);
-    }
-
-    th.sortable {
-      cursor: pointer;
-      user-select: none;
-    }
-
-    .sticky-title {
-      position: sticky;
-      left: 0;
-      background: var(--sticky-header-bg);
-      z-index: 2;
-    }
-
-    thead tr:first-child th {
-      position: sticky;
-      top: 0;
-      background: var(--sticky-header-bg);
-      z-index: 1;
-    }
-
-    #resetSortBtn {
-      margin-top: 0.5rem;
-      padding: 0.4rem 0.8rem;
-      font-size: 0.9rem;
-    }
-
-    @media screen and (max-width: 768px) {
-      table, thead, tbody, th, td, tr {
-        display: block;
-        width: 100%;
-      }
-
-      thead tr {
-        display: none;
-      }
-
-      tbody tr {
-        margin-bottom: 1rem;
-        border: 1px solid #ccc;
-        padding: 0.5rem;
-      }
-
-      tbody td {
-        text-align: right;
-        padding-left: 50%;
-        position: relative;
-      }
-
-      tbody td::before {
-        content: attr(data-label);
-        position: absolute;
-        left: 0;
-        width: 45%;
-        padding-left: 0.5rem;
-        font-weight: bold;
-        text-align: left;
-      }
-    }
+    body { margin:0; padding:1rem; background:#111; color:#eee; font-family:sans-serif }
+    #controls { display:flex; gap:1rem; align-items:center; flex-wrap:wrap }
+    #controls input, #controls button, #controls select { padding:.5rem; font-size:1rem }
+    table { width:100%; border-collapse:collapse; margin-top:1rem }
+    th, td { padding:.5rem; border:1px solid #444 }
+    th { background:#222; text-align:left; user-select:none }
+    tr:nth-child(even) { background:#1a1a1a }
+    #table-container { max-height:70vh; overflow-y:auto }
+    #pagination { margin-top:1rem }
+    #pagination button { margin-right:.5rem; padding:.5rem 1rem }
+    #error { color:#f66; margin-top:1rem }
+    th.sorted { color: #6cf; }
   </style>
 </head>
 <body>
-  <h1>Supabase Viewer</h1>
-  <label><input type="checkbox" id="darkModeToggle" checked> Dark Mode</label>
-  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
-  <div id="columnToggles" style="margin: 0;"></div>
-  <button id="resetSortBtn" onclick="resetSort()">Reset Sort</button>
-</div>
 
-  <table id="data-table">
-    <thead>
-      <tr>
-        <th class="sortable" onclick="sortBy('id')">ID <span id="sort-id"></span></th>
-        <th class="sortable sticky-title" onclick="sortBy('title')">Title <span id="sort-title"></span></th>
-        <th class="sortable" onclick="sortBy('platform')">Platform <span id="sort-platform"></span></th>
-        <th class="sortable" onclick="sortBy('release_date')">Release Date <span id="sort-release_date"></span></th>
-        <th class="sortable" onclick="sortBy('playtime')">Playtime <span id="sort-playtime"></span></th>
-        <th class="sortable" onclick="sortBy('rawg_rating')">RAWG Rating <span id="sort-rawg_rating"></span></th>
-        <th class="sortable" onclick="sortBy('genre')">Genre <span id="sort-genre"></span></th>
-      </tr>
-      <tr class="filter-row">
-        <th></th>
-        <th><input type="text" id="filter-title" placeholder="Search title"></th>
-        <th><input type="text" id="filter-platform" placeholder="Search platform"></th>
-        <th><input type="text" id="filter-release" placeholder="Search date"></th>
-        <th><input type="text" id="filter-playtime" placeholder="Search playtime"></th>
-        <th><input type="text" id="filter-rating" placeholder="Search rating"></th>
-        <th><input type="text" id="filter-genre" placeholder="Search genre"></th>
-      </tr>
-    </thead>
-    <tbody></tbody>
-  </table>
+  <h1>Supabase Viewer (Tables & Views)</h1>
 
-  <button id="resetSortBtn" onclick="resetSort()">Reset Sort</button>
+  <div id="controls">
+    <label for="view-select">Select View:</label>
+    <select id="view-select"></select>
+    <input id="search" type="text" placeholder="🔍 Search…">
+    <button id="reset-sort">Reset Sort</button>
+    <label for="page-size">Show per page:</label>
+    <select id="page-size">
+      <option value="10">10</option>
+      <option value="25">25</option>
+      <option value="50">50</option>
+      <option value="100" selected>100</option>
+      <option value="all">All</option>
+    </select>
+    <button id="export">Export to CSV</button>
+  </div>
 
-  <script>
+  <div id="error"></div>
+  <div id="table-container">
+    <table id="data-table">
+      <thead><tr id="table-headers"></tr></thead>
+      <tbody></tbody>
+    </table>
+  </div>
+
+  <div id="pagination">
+    <button id="prev" disabled>← Prev</button>
+    <span id="page-info"></span>
+    <button id="next" disabled>Next →</button>
+  </div>
+
+  <script type="module">
+    import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm';
+
     const SUPABASE_URL = 'https://mbdrtvxcjijgzxlzlfzw.supabase.co';
     const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1iZHJ0dnhjamlqZ3p4bHpsZnp3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDUxNjQ2NzYsImV4cCI6MjA2MDc0MDY3Nn0.8phlukCcNjY0QQ5LDsl4KFnawuUoXwHCR2OuxLrLZVQ';
+    const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-    const client = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-    let fullData = [];
-    let currentSort = { column: null, ascending: true };
-    const visibleColumns = {
-      id: true,
-      title: true,
-      platform: true,
-      release_date: true,
-      playtime: true,
-      rawg_rating: true,
-      genre: true
-    };
+    let allData = [], filtered = [];
+    let pageSize = 100, currentPage = 1;
+    let sortKey = null, sortAsc = true;
+    let columns = [];
 
-    async function loadGames() {
-      const { data, error } = await client
-        .from('games')
-        .select('*');
-
-      if (error) {
-        console.error("Error:", error.message);
-        return;
+    async function loadViews() {
+      try {
+        const { data: views, error } = await supabase.rpc('list_views');
+        if (error) throw error;
+        const select = document.getElementById('view-select');
+        const viewNames = ['games', ...views.map(v => v.name).filter(n => n !== 'games')];
+        viewNames.forEach(name => {
+          const opt = document.createElement('option');
+          opt.value = name;
+          opt.textContent = name;
+          select.appendChild(opt);
+        });
+        select.value = 'games';
+        select.addEventListener('change', () => initData());
+      } catch (err) {
+        document.getElementById('error').textContent = err.message;
       }
-
-      fullData = data;
-      applyFilters();
     }
 
-    function displayData(data) {
-      const headers = {
-        id: "ID",
-        title: "Title",
-        platform: "Platform",
-        release_date: "Release Date",
-        playtime: "Playtime",
-        rawg_rating: "RAWG Rating",
-        genre: "Genre"
-      };
+    async function fetchAll(view, batchSize = 1000) {
+      let from = 0, chunk, result = [];
+      do {
+        const { data, error } = await supabase
+          .from(view).select('*').range(from, from + batchSize - 1);
+        if (error) throw error;
+        chunk = data;
+        result.push(...chunk);
+        from += batchSize;
+      } while (chunk.length === batchSize);
+      return result;
+    }
 
-      const toggleContainer = document.getElementById('columnToggles');
-      toggleContainer.innerHTML = '';
-      for (const key in headers) {
-        const label = document.createElement('label');
-        label.style.marginRight = '0.5rem';
-        const checkbox = document.createElement('input');
-        checkbox.type = 'checkbox';
-        checkbox.checked = visibleColumns[key];
-        checkbox.onchange = () => {
-          visibleColumns[key] = checkbox.checked;
-          applyFilters();
-        };
-        label.appendChild(checkbox);
-        label.append(' ' + headers[key]);
-        toggleContainer.appendChild(label);
-      }
-
-      const headerRow = document.querySelector('#data-table thead tr');
-      const headerSpans = document.querySelectorAll('#data-table thead tr:first-child span');
-      Object.keys(headers).forEach((key, idx) => {
-        const th = headerRow.children[idx];
-        th.style.display = visibleColumns[key] ? '' : 'none';
-        headerSpans[idx].style.display = visibleColumns[key] ? '' : 'none';
+    function renderTable() {
+      const table = document.getElementById('data-table');
+      const thead = table.querySelector('thead tr');
+      thead.innerHTML = '';
+      columns.forEach(col => {
+        const th = document.createElement('th');
+        th.className = col === sortKey ? 'sorted' : '';
+        th.innerHTML = col + (col === sortKey ? (sortAsc ? ' ▲' : ' ▼') : '');
+        th.style.cursor = 'pointer';
+        th.addEventListener('click', () => {
+          if (sortKey === col) sortAsc = !sortAsc;
+          else { sortKey = col; sortAsc = true; }
+          applySort(); applyPage(); renderTable();
+        });
+        thead.appendChild(th);
       });
 
-      const filterRow = document.querySelector('#data-table thead tr.filter-row');
-      Object.keys(headers).forEach((key, idx) => {
-        const th = filterRow.children[idx];
-        th.style.display = visibleColumns[key] ? '' : 'none';
-      });
+      applySort(); applyPage();
+    }
 
+    function applySort() {
+      if (!sortKey) return;
+      filtered.sort((a, b) => {
+        const va = a[sortKey], vb = b[sortKey];
+        if (va == null || vb == null) return 0;
+        if (typeof va === 'number') return sortAsc ? va - vb : vb - va;
+        const sa = va.toString().toLowerCase(), sb = vb.toString().toLowerCase();
+        return sortAsc ? sa.localeCompare(sb) : sb.localeCompare(sa);
+      });
+    }
+
+    function applyPage() {
+      const start = (currentPage - 1) * pageSize;
+      const pageData = filtered.slice(start, start + pageSize);
       const tbody = document.querySelector('#data-table tbody');
       tbody.innerHTML = '';
-      data.forEach(row => {
+      pageData.forEach(row => {
         const tr = document.createElement('tr');
-        for (const key in headers) {
-          if (!visibleColumns[key]) continue;
+        columns.forEach(c => {
           const td = document.createElement('td');
-          td.textContent = row[key] ?? '';
+          td.textContent = row[c] || '';
           tr.appendChild(td);
-        }
+        });
         tbody.appendChild(tr);
       });
+      const total = filtered.length;
+      const totalPages = pageSize === 'all' ? 1 : Math.ceil(total / pageSize);
+      document.getElementById('prev').disabled = currentPage <= 1;
+      document.getElementById('next').disabled = currentPage >= totalPages;
+      document.getElementById('page-info').textContent =
+        `Page ${currentPage} of ${totalPages} (${total} rows)`;
+      document.getElementById('pagination')
+        .style.display = (pageSize === 'all' ? 'none' : 'block');
     }
 
-    function applyFilters() {
-      const titleFilter = document.getElementById('filter-title').value.toLowerCase();
-      const platformFilter = document.getElementById('filter-platform').value.toLowerCase();
-      const releaseFilter = document.getElementById('filter-release').value.toLowerCase();
-      const playtimeFilter = document.getElementById('filter-playtime').value.toLowerCase();
-      const ratingFilter = document.getElementById('filter-rating').value.toLowerCase();
-      const genreFilter = document.getElementById('filter-genre').value.toLowerCase();
+    async function initData() {
+      const view = document.getElementById('view-select').value;
+      document.getElementById('error').textContent = '';
+      try {
+        allData = await fetchAll(view);
+        filtered = [...allData];
+        columns = allData.length ? Object.keys(allData[0]) : [];
+        document.getElementById('search').value = '';
+        sortKey = columns.includes('title') ? 'title' : null;
+        sortAsc = true;
+        currentPage = 1;
+        renderTable();
+      } catch (err) {
+        document.getElementById('error').textContent = err.message;
+      }
+    }
 
-      let filtered = fullData.filter(row =>
-        (!titleFilter || row.title?.toLowerCase().includes(titleFilter)) &&
-        (!platformFilter || row.platform?.toLowerCase().includes(platformFilter)) &&
-        (!releaseFilter || String(row.release_date).toLowerCase().includes(releaseFilter)) &&
-        (!playtimeFilter || String(row.playtime).toLowerCase().includes(playtimeFilter)) &&
-        (!ratingFilter || String(row.rawg_rating).toLowerCase().includes(ratingFilter)) &&
-        (!genreFilter || row.genre?.toLowerCase().includes(genreFilter))
-      );
+    window.addEventListener('DOMContentLoaded', async () => {
+      document.getElementById('search').addEventListener('input', e => {
+        const q = e.target.value.toLowerCase();
+        filtered = allData.filter(r =>
+          columns.some(c => (r[c] || '').toString().toLowerCase().includes(q))
+        );
+        currentPage = 1;
+        applySort(); applyPage();
+      });
 
-      if (currentSort.column) {
-        const { column, ascending } = currentSort;
-        filtered.sort((a, b) => {
-          const valA = a[column] ?? '';
-          const valB = b[column] ?? '';
-          if (!isNaN(valA) && !isNaN(valB)) {
-            return ascending ? valA - valB : valB - valA;
-          }
-          return ascending
-            ? String(valA).localeCompare(String(valB))
-            : String(valB).localeCompare(String(valA));
+      document.getElementById('page-size').addEventListener('change', e => {
+        const v = e.target.value;
+        pageSize = v === 'all' ? filtered.length : parseInt(v);
+        currentPage = 1;
+        applyPage();
+      });
+
+      document.getElementById('prev').addEventListener('click', () => {
+        currentPage--;
+        applyPage();
+      });
+
+      document.getElementById('next').addEventListener('click', () => {
+        currentPage++;
+        applyPage();
+      });
+
+      document.getElementById('reset-sort').addEventListener('click', () => {
+        sortKey = columns.includes('title') ? 'title' : null;
+        sortAsc = true;
+        applySort();
+        applyPage();
+        renderTable();
+      });
+
+      document.getElementById('export').addEventListener('click', () => {
+        const rows = [columns, ...allData.map(r => columns.map(c => r[c] || ''))];
+        const csv = rows.map(r => r.map(v => `"${v.toString().replace(/"/g, '""')}"`).join(',')).join('\n');
+        const blob = new Blob([csv], { type: 'text/csv' });
+        const a = Object.assign(document.createElement('a'), {
+          href: URL.createObjectURL(blob),
+          download: `export_${new Date().toISOString().replace(/[:.]/g, '-')}.csv`
         });
-      }
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+      });
 
-      updateSortIndicators();
-      displayData(filtered);
-    }
-
-    function sortBy(columnKey) {
-      if (currentSort.column === columnKey) {
-        currentSort.ascending = !currentSort.ascending;
-      } else {
-        currentSort.column = columnKey;
-        currentSort.ascending = true;
-      }
-      applyFilters();
-    }
-
-    function resetSort() {
-      currentSort = { column: null, ascending: true };
-      applyFilters();
-    }
-
-    function updateSortIndicators() {
-      document.querySelectorAll("thead th span").forEach(span => span.textContent = "");
-      if (currentSort.column) {
-        const arrow = currentSort.ascending ? "▲" : "▼";
-        const sortSpan = document.getElementById("sort-" + currentSort.column);
-        if (sortSpan) sortSpan.textContent = arrow;
-      }
-    }
-
-    document.querySelectorAll('.filter-row input').forEach(input => {
-      input.addEventListener('input', applyFilters);
+      await loadViews();
+      await initData();
     });
-
-    document.getElementById('darkModeToggle').addEventListener('change', (e) => {
-      document.documentElement.setAttribute('data-theme', e.target.checked ? 'dark' : 'light'); toggle.checked = true;
-    });
-
-    loadGames();
   </script>
 </body>
 </html>

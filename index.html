@@ -50,6 +50,7 @@
       #table-container {
         max-height: 70vh;
         overflow-y: auto;
+        overflow-x: auto;
       }
       #pagination {
         margin-top: 1rem;
@@ -106,10 +107,9 @@
         }
 
         table {
-          table-layout: auto;
-          width: 100%;
           display: block;
-          overflow-x: auto;
+          table-layout: auto;
+          min-width: 600px;
         }
 
         th,
@@ -117,11 +117,12 @@
           font-size: 0.95rem;
           padding: 0.4rem 0.6rem;
           white-space: normal;
-          word-break: normal;
+          word-break: break-word;
           overflow-wrap: break-word;
           max-width: 200px;
           vertical-align: top;
           line-height: 1.4;
+          text-overflow: ellipsis;
         }
 
         th {
@@ -143,7 +144,6 @@
         th:nth-child(3),
         th:nth-child(4),
         th:nth-child(5) {
-          white-space: nowrap;
           font-family: monospace;
           font-size: 0.9rem;
           text-align: center;
@@ -156,14 +156,31 @@
           overflow-wrap: anywhere;
         }
 
+        td:nth-child(4),
+        td:nth-child(5) {
+          max-width: 160px;
+        }
+
         #column-dropdown {
           max-height: 150px;
           font-size: 0.95rem;
         }
 
         #table-container {
-          max-width: 100%;
+          position: relative;
           overflow-x: auto;
+          -webkit-overflow-scrolling: touch;
+        }
+
+        #table-container::after {
+          content: "";
+          position: absolute;
+          top: 0;
+          right: 0;
+          width: 30px;
+          height: 100%;
+          background: linear-gradient(to right, transparent, #111);
+          pointer-events: none;
         }
 
         #controls select,
@@ -185,6 +202,7 @@
 
       <input id="search" type="text" placeholder="🔍 Search…" />
       <button id="reset-sort">Reset Sort</button>
+      <button id="reset-columns">Reset Columns</button>
 
       <div id="column-toggle-container">
         <button id="column-toggle-button">Select Columns ▼</button>
@@ -409,6 +427,22 @@
           applySort();
           applyPage();
         });
+
+        document
+          .getElementById("reset-columns")
+          .addEventListener("click", () => {
+            const view = document.getElementById("view-select").value;
+            const defaultVisible = ["title", "release_date", "playtime"];
+            visibleColumns = defaultVisible.filter((c) => columns.includes(c));
+            if (visibleColumns.length === 0) visibleColumns = [...columns];
+            localStorage.setItem(
+              `visibleColumns:${view}`,
+              JSON.stringify(visibleColumns)
+            );
+            renderColumnToggles();
+            renderTable();
+            console.log("Columns reset to default");
+          });
 
         document.getElementById("page-size").addEventListener("change", (e) => {
           const v = e.target.value;
